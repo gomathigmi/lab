@@ -707,3 +707,105 @@ plt.title('GA Fitness Over Generations')
 plt.xlabel('Generation'); plt.ylabel('Best Fitness')
 plt.grid(); plt.show()
 
+
+import random, math, matplotlib.pyplot as plt
+
+# Fitness Function
+def f(x, y): return math.sin(x) + math.sin(y)
+
+# Initialize Population
+def init_pop(n, lb, ub):
+    return [(random.uniform(lb, ub), random.uniform(lb, ub)) for _ in range(n)]
+
+# Selection (Roulette Wheel)
+def select(pop):
+    fit = [f(x, y) for x, y in pop]
+    total = sum(fit)
+    probs = [val / total for val in fit]
+    return random.choices(pop, weights=probs, k=2)
+
+# Crossover & Mutation
+def crossover(p1, p2, pc=0.7):
+    return ((p1[0], p2[1]), (p2[0], p1[1])) if random.random() < pc else (p1, p2)
+
+def mutate(ind, pm=0.01):
+    x, y = ind
+    if random.random() < pm: x += random.uniform(-0.1, 0.1)
+    if random.random() < pm: y += random.uniform(-0.1, 0.1)
+    return x, y
+
+# Genetic Algorithm
+def GA(gens=50, pop_size=100, lb=-2*math.pi, ub=2*math.pi):
+    pop = init_pop(pop_size, lb, ub)
+    best_hist = []
+
+    for g in range(gens):
+        new_pop = []
+        while len(new_pop) < pop_size:
+            p1, p2 = select(pop)
+            c1, c2 = crossover(p1, p2)
+            new_pop += [mutate(c1), mutate(c2)]
+        pop = new_pop[:pop_size]
+        best = max(pop, key=lambda i: f(*i))
+        best_hist.append(f(*best))
+        print(f"Gen {g+1}: Best={best}, Fitness={f(*best):.3f}")
+
+    return best, best_hist
+
+# Run & Plot
+best, hist = GA()
+print(f"\nBest Solution: {best}, Fitness={f(*best):.3f}")
+
+plt.plot(hist, 'b-o')
+plt.title("GA Convergence: f(x,y)=sin(x)+sin(y)")
+plt.xlabel("Generation"); plt.ylabel("Best Fitness")
+plt.grid(True); plt.show()
+
+import random, math
+
+# Fitness Function
+def f(x, y, z):
+    return -(x**2 + y**2 + z**2) + 10*(math.cos(2*math.pi*x) + math.cos(2*math.pi*y) + math.cos(2*math.pi*z))
+
+# Initialize Population
+def init_pop(n, lb, ub):
+    return [(random.uniform(lb, ub), random.uniform(lb, ub), random.uniform(lb, ub)) for _ in range(n)]
+
+# Selection
+def select(pop):
+    fit = [f(x, y, z) for x, y, z in pop]
+    total = sum(fit)
+    probs = [val/total for val in fit]
+    return random.choices(pop, weights=probs, k=2)
+
+# Crossover & Mutation
+def crossover(p1, p2, pc=0.7):
+    if random.random() < pc:
+        a, b = random.random(), random.random()
+        c1 = tuple(a*p1[i] + (1-a)*p2[i] for i in range(3))
+        c2 = tuple(b*p1[i] + (1-b)*p2[i] for i in range(3))
+        return c1, c2
+    return p1, p2
+
+def mutate(ind, pm=0.01):
+    return tuple(v + random.uniform(-0.1, 0.1) if random.random() < pm else v for v in ind)
+
+# Genetic Algorithm
+def GA(gens=50, pop_size=100, lb=-1, ub=1):
+    pop = init_pop(pop_size, lb, ub)
+    for g in range(gens):
+        new_pop = []
+        while len(new_pop) < pop_size:
+            p1, p2 = select(pop)
+            c1, c2 = crossover(p1, p2)
+            new_pop += [mutate(c1), mutate(c2)]
+        pop = new_pop[:pop_size]
+        best = max(pop, key=lambda i: f(*i))
+        print(f"Gen {g+1}: Best={best}, Fitness={f(*best):.3f}")
+    return best
+
+# Run
+best = GA()
+print(f"\nBest Solution: {best}, Fitness={f(*best):.3f}")
+
+
