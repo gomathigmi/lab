@@ -527,4 +527,183 @@ if __name__ == "__main__":
 
 
 Output:
- 
+
+
+
+ Exp1:
+import numpy as np
+import matplotlib.pyplot as plt
+# Ranges
+T = np.arange(0, 41, 1)
+F = np.arange(0, 101, 1)
+
+# Temperature membership
+cold = lambda x: np.clip((20 - x) / 20, 0, 1)
+warm = lambda x: np.clip(np.minimum((x - 15) / 10, (35 - x) / 10), 0, 1)
+hot  = lambda x: np.clip((x - 30) / 10, 0, 1)
+
+# Fan speed membership
+slow   = lambda x: np.clip((50 - x) / 50, 0, 1)
+medium = lambda x: np.clip(np.minimum((x - 25) / 25, (75 - x) / 25), 0, 1)
+fast   = lambda x: np.clip((x - 50) / 50, 0, 1)
+
+# Fuzzy rule
+def fan_speed(t):
+    c, w, h = cold(t), warm(t), hot(t)
+    return (c*20 + w*50 + h*90) / (c + w + h)
+
+# Example input
+temp = 28
+print(f"\nTemperature: {temp}°C")
+print(f"Calculated fan speed: {fan_speed(temp):.2f}%")
+
+# Plot Temperature MFs
+plt.figure(figsize=(7,4))
+plt.plot(T, cold(T), label='Cold')
+plt.plot(T, warm(T), label='Warm')
+plt.plot(T, hot(T), label='Hot')
+plt.xlabel('Temperature (°C)'); plt.ylabel('Membership')
+plt.title('Temperature Membership Functions')
+plt.legend(); plt.grid(True); plt.show()
+
+# Plot Fan Speed MFs
+plt.figure(figsize=(7,4))
+plt.plot(F, slow(F), label='Slow')
+plt.plot(F, medium(F), label='Medium')
+plt.plot(F, fast(F), label='Fast')
+plt.xlabel('Fan Speed (%)'); plt.ylabel('Membership')
+plt.title('Fan Speed Membership Functions')
+plt.legend(); plt.grid(True); plt.show()
+EXP 2
+
+import numpy as np
+
+class DiscretePerceptron:
+    def __init__(self, input_size):
+        self.w = np.zeros(input_size)
+        self.b = 0
+
+    def predict(self, x):
+        return 1 if np.dot(self.w, x) + self.b > 0 else 0
+
+    def train(self, X, y, lr=0.1, epochs=100):
+        for _ in range(epochs):
+            for xi, yi in zip(X, y):
+                err = yi - self.predict(xi)
+                self.w += lr * err * xi
+                self.b += lr * err
+
+# --- Main ---
+X = np.array([[2,3],[3,2],[1,1],[5,7],[6,8],[7,6]])
+y = np.array([0,0,0,1,1,1])
+
+p = DiscretePerceptron(2)
+p.train(X, y)
+
+for d in np.array([[4,5],[2,2]]):
+    print(f"Data {d} belongs to class {p.predict(d)}")
+
+
+Exp 3:
+
+import numpy as np
+
+# Activation and derivative
+sigmoid = lambda x: 1 / (1 + np.exp(-x))
+dsigmoid = lambda x: x * (1 - x)
+
+# XOR data
+X = np.array([[0,0],[0,1],[1,0],[1,1]])
+y = np.array([[0],[1],[1],[0]])
+
+# Parameters
+np.random.seed(42)
+w1 = np.random.rand(2,2)
+w2 = np.random.rand(2,1)
+lr, epochs = 0.1, 10000
+
+# Training
+for _ in range(epochs):
+    h = sigmoid(X @ w1)
+    o = sigmoid(h @ w2)
+    e = y - o
+    w2 += h.T @ (e * dsigmoid(o)) * lr
+    w1 += X.T @ ((e * dsigmoid(o)) @ w2.T * dsigmoid(h)) * lr
+
+# Testing
+print("\nTrained Network Predictions:")
+for d in X:
+    h = sigmoid(d @ w1)
+    o = sigmoid(h @ w2)
+    print(f"Input: {d} => Predicted Output: {np.round(o[0],3)}")
+
+
+Exp 4:
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sample data
+np.random.seed(42)
+data = np.random.rand(100, 2)
+
+# SOM parameters
+gsize, lr, epochs = (10, 10), 0.2, 100
+weights = np.random.rand(*gsize, 2)
+
+# Training
+for e in range(epochs):
+    for x in data:
+        bmu = np.unravel_index(np.argmin(np.linalg.norm(weights - x, axis=-1)), gsize)
+        for i in range(gsize[0]):
+            for j in range(gsize[1]):
+                d = np.linalg.norm(np.array([i, j]) - bmu)
+                inf = np.exp(-d**2 / (2 * (e + 1)**2))
+                weights[i, j] += inf * lr * (x - weights[i, j])
+
+# Cluster map
+clusters = np.zeros(gsize, int)
+for i in range(gsize[0]):
+    for j in range(gsize[1]):
+        clusters[i, j] = np.argmin(np.linalg.norm(data - weights[i, j], axis=-1))
+
+# Visualization
+plt.figure(figsize=(8, 8))
+plt.pcolormesh(clusters, cmap='viridis', shading='auto')
+plt.colorbar(label='Cluster')
+plt.scatter(data[:, 0] * gsize[0], data[:, 1] * gsize[1], c='r', s=10, label='Data')
+plt.legend(); plt.title('Self-Organizing Map Clustering'); plt.show()
+
+Exp 5:
+import random, matplotlib.pyplot as plt
+
+f = lambda x: -x**2 + 6*x + 9  # Fitness function
+
+def GA(gen=50, size=100, lb=-10, ub=10, cr=0.7, mr=0.01):
+    pop = [random.uniform(lb, ub) for _ in range(size)]
+    hist = []
+    for g in range(gen):
+        fit = [max(f(x), 1e-4) for x in pop]  # ensure positive fitness
+        new = []
+        for _ in range(size // 2):
+            p1, p2 = random.choices(pop, weights=fit, k=2)
+            if random.random() < cr:
+                c1 = c2 = (p1 + p2) / 2
+            else:
+                c1, c2 = p1, p2
+            if random.random() < mr: c1 += random.uniform(-1, 1)
+            if random.random() < mr: c2 += random.uniform(-1, 1)
+            new += [c1, c2]
+        pop = new[:size]
+        best = max(pop, key=f)
+        hist.append(f(best))
+        print(f"Gen {g+1}: Best={round(best,4)}, Fit={round(f(best),4)}")
+    return best, hist
+
+best, hist = GA()
+print(f"\nBest: x={round(best,4)}, Fitness={round(f(best),4)}")
+plt.plot(hist, 'b-o')
+plt.title('GA Fitness Over Generations')
+plt.xlabel('Generation'); plt.ylabel('Best Fitness')
+plt.grid(); plt.show()
+
